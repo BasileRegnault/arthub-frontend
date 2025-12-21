@@ -1,0 +1,21 @@
+<div class="group relative cursor-pointer">
+
+  <div class="mt-4 flex justify-between">
+    <div>
+      <h3 class="text-sm font-medium text-gray-900">
+        <a [routerLink]="['/artworks', artwork.id]">
+          <span aria-hidden="true" class="absolute inset-0"></span>
+          {{ artwork.title }}
+        </a>
+      </h3>
+
+      <p class="mt-1 text-sm text-gray-500">
+        {{ artwork.style }}
+      </p>
+    </div>
+
+    <p class="text-sm font-semibold text-gray-800">
+      {{ artwork.creationDate }}
+    </p>
+  </div>
+</div>

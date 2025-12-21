@@ -1,0 +1,116 @@
+<div class="space-y-6">
+
+  <div class="flex justify-between items-center">
+    <h2 class="text-2xl font-semibold text-gray-800">Liste des artistes</h2>
+    <a routerLink="/admin/artists/new"
+       class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+      + Ajouter un artiste
+    </a>
+  </div>
+
+  <!-- Filtre -->
+  <app-artists-filter (search)="onSearch($event)" (reset)="onResetFilters()"></app-artists-filter>
+
+</div>
+
+<!-- Tableau -->
+<div class="overflow-x-auto bg-white shadow-md rounded-lg mt-6">
+  <table class="min-w-full divide-y divide-gray-200">
+    <thead class="bg-gray-50 sticky top-0 z-10">
+      <tr>
+        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Photo</th>
+        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700 cursor-pointer" (click)="sortBy('firstname')">
+          Prénom <span *ngIf="sortColumn==='firstname'">{{ sortDirection==='asc'?'▲':'▼' }}</span>
+        </th>
+        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700 cursor-pointer" (click)="sortBy('lastname')">
+          Nom <span *ngIf="sortColumn==='lastname'">{{ sortDirection==='asc'?'▲':'▼' }}</span>
+        </th>
+        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Nationalité</th>
+        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Né</th>
+        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Décédé</th>
+        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Œuvres</th>
+        <th class="px-4 py-3 text-center text-sm font-medium text-gray-700">Actions</th>
+        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Créé le</th>
+        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Modifié le</th>
+      </tr>
+    </thead>
+
+    <tbody *ngIf="!loading()" class="bg-white divide-y divide-gray-200">
+      <tr *ngFor="let artist of artistsWithProfilePictures()" class="hover:bg-gray-50 transition">
+
+        <td class="px-4 py-3">
+          <img [src]="artist.profilePictureUrl" class="w-16 h-16 rounded object-cover" *ngIf="artist.profilePictureUrl"/>
+        </td>
+
+        <td class="px-4 py-3 font-medium text-gray-800">{{ artist.firstname }}</td>
+        <td class="px-4 py-3 text-gray-600">{{ artist.lastname }}</td>
+        <td class="px-4 py-3 text-gray-600">{{ artist.nationality || '—' }}</td>
+        <td class="px-4 py-3 text-gray-600">{{ artist.bornAt | dateDisplay:false }}</td>
+        <td class="px-4 py-3 text-gray-600"> {{ artist.diedAt ? (artist.diedAt | dateDisplay:false) : '—' }}</td>
+        <td class="px-4 py-3 text-gray-600 text-center">{{ artist.artworks?.length || 0 }}</td>
+
+        <!-- Actions -->
+          <td class="px-4 py-3 text-center flex justify-center gap-2">
+            <button class="w-8 h-8 flex items-center justify-center rounded-full bg-blue-50 hover:bg-blue-100 text-blue-600 transition" (click)="onEdit(artist.id)" title="Éditer">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4v7l10 10 7-7L11 4z" />
+              </svg>
+            </button>
+
+            <button class="w-8 h-8 flex items-center justify-center rounded-full bg-red-50 hover:bg-red-100 text-red-600 transition" (click)="onDelete(artist.id, artist.firstname)" title="Supprimer">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <button class="w-8 h-8 flex items-center justify-center rounded-full bg-green-50 hover:bg-green-100 text-green-600 transition" (click)="onPreview(artist.id)" title="Aperçu">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            </button>
+
+            <button class="w-8 h-8 flex items-center justify-center rounded-full bg-yellow-50 hover:bg-yellow-100 text-yellow-600 transition" (click)="onViewDetails(artist.id)" title="Voir détails">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3v18h18M7 18V9m4 9v-6m4 6V4"/>
+              </svg>
+            </button>
+          </td>
+
+        <!-- Dates -->
+        <td class="px-4 py-3 text-gray-500">{{ artist.createdAt | dateDisplay:true }}</td>
+        <td class="px-4 py-3 text-gray-500">{{ artist.updatedAt | dateDisplay:true }}</td>
+      </tr>
+    </tbody>
+
+    <tbody *ngIf="loading()">
+      <tr>
+        <td colspan="8" class="px-6 py-6 text-center text-gray-500">Chargement...</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Pagination -->
+<div class="flex justify-center gap-4 mt-4">
+  <button (click)="setPage(page() - 1)" [disabled]="page()<=1"
+          class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 transition">← Précédent</button>
+  <span class="px-2 py-1 text-gray-700 font-medium">Page {{ page() }}</span>
+  <button (click)="setPage(page()+1)" [disabled]="!hasNextPage()"
+          class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 transition">Suivant →</button>
+</div>
+
+<!-- Total -->
+<div class="flex gap-3 mt-4">
+  <span class="px-3 py-1 bg-gray-100 rounded text-gray-700">Total : {{ artists()?.total || 0 }}</span>
+  <span class="px-3 py-1 bg-blue-100 rounded text-blue-700">Sur cette page : {{ artists()?.items?.length || 0 }}</span>
+</div>
+
+<!-- Pop-up confirmation -->
+<app-confirm-modal
+  [isOpen]="confirmModalOpen()"
+  title="Supprimer l'artiste"
+  [itemTitle]="selectedArtistName"
+  (onConfirm)="handleConfirmDelete()"
+  (onCancel)="handleCancelDelete()">
+</app-confirm-modal>

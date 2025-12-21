@@ -1,0 +1,68 @@
+import { HttpInterceptorFn } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { AuthService } from './auth.service';
+import { catchError, switchMap, throwError, EMPTY } from 'rxjs';
+
+let isRefreshing = false;
+
+export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
+  const auth = inject(AuthService);
+
+  // ⛔️ Ne jamais intercepter ces routes
+  if (
+    req.url.includes('/login') ||
+    req.url.includes('/register') ||
+    req.url.includes('/token/refresh')
+  ) {
+    return next(req);
+  }
+
+  const token = auth.token;
+
+  if (token) {
+    req = req.clone({
+      setHeaders: { Authorization: `Bearer ${token}` }
+    });
+  }
+
+  return next(req).pipe(
+    catchError(err => {
+
+      // ❌ Mauvais identifiants → PAS DE REFRESH
+      if (err.status === 401 && err.error?.message === 'Invalid credentials.') {
+        return throwError(() => err);
+      }
+
+      // 🔄 Token expiré → refresh UNE SEULE FOIS
+      if (err.status === 401 && !isRefreshing) {
+        isRefreshing = true;
+
+        return auth.refreshToken().pipe(
+          switchMap(res => {
+            isRefreshing = false;
+
+            auth.saveTokens(res.token, res.refresh_token);
+
+            const retryReq = req.clone({
+              setHeaders: {
+                Authorization: `Bearer ${res.token}`
+              }
+            });
+
+            return next(retryReq);
+          }),
+          catchError(() => {
+            isRefreshing = false;
+
+            auth.logout();
+            window.location.href = '/login?reason=expired';
+
+            return EMPTY;
+          })
+        );
+      }
+
+      return throwError(() => err);
+    })
+  );
+};

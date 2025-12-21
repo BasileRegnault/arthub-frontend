@@ -1,0 +1,34 @@
+<header class="h-16 bg-white shadow flex items-center justify-between px-6">
+  <h1 class="text-lg font-semibold">Administration</h1>
+
+  <div class="flex items-center space-x-4">
+    <!-- Si connecté -->
+    <ng-container *ngIf="auth.isAuthenticated(); else notLogged">
+      <span class="text-gray-600">Utilisateur connecté : {{ auth.currentUser?.username }}</span>
+      <button
+        class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+        (click)="logout()"
+      >
+        Déconnexion
+      </button>
+    </ng-container>
+
+    <!-- Si pas connecté -->
+    <ng-template #notLogged>
+      <button
+        class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+        [routerLink]="['/auth/login']"
+      >
+        Connexion
+      </button>
+      <button
+        class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+        [routerLink]="['/auth/register']"
+      >
+        Inscription
+      </button>
+
+      
+    </ng-template>
+  </div>
+</header>
