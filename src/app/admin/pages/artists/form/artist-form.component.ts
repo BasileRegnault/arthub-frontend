@@ -119,9 +119,7 @@ export class ArtistFormComponent implements OnInit {
   }
 
   uploadMediaObject(file: File) {
-    const fd = new FormData();
-    fd.append('file', file);
-    return this.api.create('media_objects', fd);
+    return this.api.createFormData(file);
   }
 
   // Delete

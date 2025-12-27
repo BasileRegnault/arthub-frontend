@@ -1,1 +1,99 @@
-<p>dashboard works!</p>
+<div class="space-y-10">
+
+  <!-- KPIs -->
+  <div
+    class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-6"
+    *ngIf="kpis()"
+  >
+    <div class="bg-white rounded-xl shadow-sm p-5 flex items-center gap-4">
+      <div class="p-3 rounded-lg bg-blue-100 text-blue-600">
+        👤
+      </div>
+      <div>
+        <p class="text-sm text-gray-500">Utilisateurs</p>
+        <p class="text-2xl font-bold">{{ kpis().users }}</p>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm p-5 flex items-center gap-4">
+      <div class="p-3 rounded-lg bg-purple-100 text-purple-600">
+        🎨
+      </div>
+      <div>
+        <p class="text-sm text-gray-500">Artistes</p>
+        <p class="text-2xl font-bold">{{ kpis().artists }}</p>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm p-5 flex items-center gap-4">
+      <div class="p-3 rounded-lg bg-green-100 text-green-600">
+        🖼️
+      </div>
+      <div>
+        <p class="text-sm text-gray-500">Œuvres</p>
+        <p class="text-2xl font-bold">{{ kpis().artworks }}</p>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm p-5 flex items-center gap-4">
+      <div class="p-3 rounded-lg bg-yellow-100 text-yellow-600">
+        ⭐
+      </div>
+      <div>
+        <p class="text-sm text-gray-500">Notes</p>
+        <p class="text-2xl font-bold">{{ kpis().ratings }}</p>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm p-5 flex items-center gap-4">
+      <div class="p-3 rounded-lg bg-red-100 text-red-600">
+        🔐
+      </div>
+      <div>
+        <p class="text-sm text-gray-500">Connexions (30j)</p>
+        <p class="text-2xl font-bold">{{ kpis().connections30d }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <h3 class="text-lg font-semibold mb-4">
+        📈 Œuvres par mois
+      </h3>
+      <canvas id="artworksByMonth"></canvas>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <h3 class="text-lg font-semibold mb-4">
+        📆 Connexions par jour
+      </h3>
+      <canvas id="connectionsByDay"></canvas>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <h3 class="text-lg font-semibold mb-4">
+        👁️ Œuvres affichées / masquées
+      </h3>
+      <canvas id="artworksDisplayed"></canvas>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <h3 class="text-lg font-semibold mb-4">
+        🎭 Styles artistiques
+      </h3>
+      <canvas id="stylesChart"></canvas>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm p-6 xl:col-span-2">
+      <h3 class="text-lg font-semibold mb-4">
+        🌍 Répartition par nationalité
+      </h3>
+      <canvas id="nationalitiesChart"></canvas>
+    </div>
+
+  </div>
+
+</div>

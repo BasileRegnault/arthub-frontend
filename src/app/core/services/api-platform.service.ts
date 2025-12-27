@@ -36,6 +36,12 @@ export class ApiPlatformService<T> {
     );
   }
 
+  getAll(endpoint: string): Observable<T> {
+    console.log(`${this.baseUrl}/${endpoint}`);
+    
+    return this.http.get<T>(`${this.baseUrl}/${endpoint}`);
+  }
+
   get(endpoint: string, id: string | number): Observable<T> {
     return this.http.get<T>(`${this.baseUrl}/${endpoint}/${id}`);
   }
@@ -56,9 +62,15 @@ export class ApiPlatformService<T> {
     return this.http.delete<void>(`${this.baseUrl}/${endpoint}/${id}`);
   }
 
-  createFormData(endpoint: string, fd: FormData) {
-    // do not set headers content-type; browser sets it
-    return this.http.post<any>(`${this.baseUrl}/${endpoint}`, fd);
+  createFormData(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return this.http.post<any>(`${this.baseUrl}/media_objects`, formData, {
+      headers: {
+        Accept: 'application/ld+json'
+      }
+    });
   }
 
   updateFormData(endpoint: string, id: string | number, fd: FormData) {

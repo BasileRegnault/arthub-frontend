@@ -7,3 +7,4 @@ export * from './rating.model';
 export * from './user.model';
 export * from './hydra.model';
 export * from './mediaObject.model';
+export * from './userLoginLog.model';

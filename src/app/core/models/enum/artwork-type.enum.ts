@@ -1,7 +1,6 @@
 export enum ArtworkType {
-  PAINTING = 'painting',
-  SCULPTURE = 'sculpture',
-  DRAWING = 'drawing',
-  PHOTOGRAPHY = 'photography',
-  INSTALLATION = 'installation'
+  PAINTING = 'Painting',
+  SCULPTURE = 'Sculpture',
+  DRAWING = 'Drawing',
+  PHOTOGRAPHY = 'Photography'
 }

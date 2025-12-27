@@ -1,8 +1,6 @@
 export enum ArtworkStyle {
-  IMPRESSIONISM = 'impressionism',
-  REALISM = 'realism',
-  CUBISM = 'cubism',
-  ABSTRACT = 'abstract',
-  BAROQUE = 'baroque',
-  MODERNISM = 'modernism'
+  IMPRESSIONISM = 'Impressionism',
+  REALISM = 'Realism',
+  CUBISM = 'Cubism',
+  ABSTRACT = 'Abstract'
 }

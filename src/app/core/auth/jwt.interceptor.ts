@@ -18,6 +18,8 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   const token = auth.token;
+  console.log(token, 'token');
+  
 
   if (token) {
     req = req.clone({
@@ -54,8 +56,8 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
           catchError(() => {
             isRefreshing = false;
 
-            auth.logout();
-            window.location.href = '/login?reason=expired';
+            //auth.logout();
+            //window.location.href = '/auth/login?reason=expired';
 
             return EMPTY;
           })

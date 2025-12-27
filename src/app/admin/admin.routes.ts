@@ -7,6 +7,12 @@ export const adminRoutes: Routes = [
     component: AdminLayoutComponent,
     children: [
       {
+        path: '',
+        loadComponent: () =>
+          import('./dashboard/dashboard.component')
+            .then(m => m.AdminDashboardComponent)
+      },
+      {
         path: 'artworks',
         loadComponent: () =>
           import('./pages/artworks/list/artwork-list.component').then(m => m.ArtworkListComponent)

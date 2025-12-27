@@ -105,6 +105,9 @@ export class ArtworkListComponent {
     const params: Record<string, any> = { page, itemsPerPage: this.itemsPerPage };
     const f = this.filters;
 
+    // On récupère que les oeuvres qui sont validées
+    params['isConfirmCreate'] = true;
+    
     if (f.title) params['title'] = f.title;
     if (f.artist) params['artist'] = `/api/artists/${f.artist.id}`;
     if (f.type) params['type'] = f.type;
