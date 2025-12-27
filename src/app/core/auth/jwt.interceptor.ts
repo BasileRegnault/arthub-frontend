@@ -27,6 +27,9 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
     });
   }
 
+  console.log(req);
+  
+
   return next(req).pipe(
     catchError(err => {
 

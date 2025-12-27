@@ -26,6 +26,7 @@ export interface Artwork {
   artist: Artist;// IRI or expanded Artist
 
   isDisplay: boolean;
+  isConfirmCreate: boolean;
 
   galleries?: Gallery[] | string[];
   ratings?: Rating[] | string[];
