@@ -1,14 +1,21 @@
 <div class="flex h-screen bg-gray-100">
 
-  <!-- Sidebar -->
-  <app-admin-sidebar class="w-64 shrink-0"></app-admin-sidebar>
+  <!-- Sidebar : largeur dépend du state -->
+  <app-admin-sidebar
+    class="shrink-0 transition-all duration-200"
+    [class.w-64]="!sidebarCollapsed()"
+    [class.w-20]="sidebarCollapsed()"
+    [collapsed]="sidebarCollapsed()"
+  ></app-admin-sidebar>
 
   <div class="flex flex-col flex-1 overflow-hidden">
 
-    <!-- Topbar -->
-    <app-admin-topbar></app-admin-topbar>
+    <!-- Topbar : bouton toggle -->
+    <app-admin-topbar
+      [collapsed]="sidebarCollapsed()"
+      (toggleSidebar)="toggleSidebar()"
+    ></app-admin-topbar>
 
-    <!-- Main content -->
     <main class="flex-1 overflow-y-auto p-6">
       <router-outlet></router-outlet>
     </main>

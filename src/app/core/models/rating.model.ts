@@ -5,10 +5,12 @@ export interface Rating {
   '@id'?: string;
   id?: number;
 
-  score: number; // float (0–5)
+  score: number;
   comment?: string | null;
 
-  author: User | string;   // note : l'entité PHP s'appelle "author"
+  createdBy?: User | string;
+  updatedBy?: User | string;
+
   artwork: Artwork | string;
 
   createdAt?: string;

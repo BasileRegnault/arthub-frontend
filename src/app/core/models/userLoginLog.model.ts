@@ -3,7 +3,7 @@ import { User } from "./user.model";
 export interface UserLoginLog {
   id: number;
   userConnected?: User | string;
-  ip?: string;
+  ipHash?: string;
   event?: string;
   userAgent?: string;
   message?: string;

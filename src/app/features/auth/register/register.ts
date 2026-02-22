@@ -43,12 +43,12 @@ export class RegisterComponent {
 
     const { email, username, password } = this.form.value;
 
-    // 1️⃣ Appel à l'API register
+    // Appel a l'API register
     this.auth.register(email!, username!, password!).subscribe({
       next: () => {
         this.success = true;
 
-        // 2️⃣ Login automatique après register
+        // Connexion automatique apres l'inscription
         this.auth.login(email!, password!).subscribe({
           next: () => {
             this.loading = false;
@@ -61,8 +61,6 @@ export class RegisterComponent {
         });
       },
       error: (err: { error: { error: string; }; }) => {
-        console.log(err);
-        
         this.loading = false;
         this.error = err.error?.error || 'Erreur lors de l’inscription';
       }

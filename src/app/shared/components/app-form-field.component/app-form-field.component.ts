@@ -18,9 +18,49 @@ export class AppFormFieldComponent {
 
   getErrorMessage(): string {
     if (!this.control.errors) return '';
-    if (this.control.errors['required']) return `${this.label} est requis`;
-    if (this.control.errors['maxlength']) return `${this.label} est trop long`;
-    if (this.control.errors['server']) return `${this.control.errors['server']}`;
+
+    if (this.control.errors['required']) {
+      return `${this.label} est requis`;
+    }
+
+    if (this.control.errors['maxlength']) {
+      const maxLength = this.control.errors['maxlength'].requiredLength;
+      return `${this.label} ne peut pas dépasser ${maxLength} caractères`;
+    }
+
+    if (this.control.errors['minlength']) {
+      const minLength = this.control.errors['minlength'].requiredLength;
+      return `${this.label} doit contenir au moins ${minLength} caractères`;
+    }
+
+    if (this.control.errors['email']) {
+      return 'Email invalide';
+    }
+
+    if (this.control.errors['pattern']) {
+      return `${this.label} n'est pas au bon format`;
+    }
+
+    if (this.control.errors['min']) {
+      const min = this.control.errors['min'].min;
+      return `${this.label} doit être supérieur ou égal à ${min}`;
+    }
+
+    if (this.control.errors['max']) {
+      const max = this.control.errors['max'].max;
+      return `${this.label} doit être inférieur ou égal à ${max}`;
+    }
+
+    // Erreur serveur
+    if (this.control.errors['server']) {
+      return this.control.errors['server'];
+    }
+
+    // Erreur personnalisée
+    if (this.control.errors['custom']) {
+      return this.control.errors['custom'];
+    }
+
     return `${this.label} est invalide`;
   }
 }

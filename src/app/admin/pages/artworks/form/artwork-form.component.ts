@@ -1,4 +1,5 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
@@ -11,7 +12,12 @@ import { AppFormFieldComponent } from "../../../../shared/components/app-form-fi
 import { BackButtonComponent } from "../../../../shared/components/back-button.component/back-button.component";
 import { AppArtistAutocompleteComponent } from '../../../../shared/components/app-artist-autocomplete.component/app-artist-autocomplete.component';
 import { ConfirmModalComponent } from '../../../../shared/components/confirm-modal.component/confirm-modal.component';
+import { GlobalErrorAlertComponent } from '../../../../shared/components/global-error-alert.component/global-error-alert.component';
+import { FormErrorHandlerService } from '../../../../core/services/form-error-handler.service';
 import { ArtworkFormControls } from '../../../../core/models/form/artwork.form.model';
+import { RelatedEntitiesModalComponent, RelatedEntitiesData } from '../../../../shared/components/related-entities-modal.component/related-entities-modal.component';
+import { ConstraintErrorHandlerService } from '../../../../core/services/constraint-error-handler.service';
+import { AppCountryAutocompleteComponent } from '../../../../shared/components/app-country-autocomplete.component/app-country-autocomplete.component';
 
 @Component({
   selector: 'app-artwork-form',
@@ -19,7 +25,8 @@ import { ArtworkFormControls } from '../../../../core/models/form/artwork.form.m
   imports: [
     CommonModule, ReactiveFormsModule, RouterModule,
     FileUploadComponent, AppFormFieldComponent, BackButtonComponent,
-    AppArtistAutocompleteComponent, ConfirmModalComponent
+    AppArtistAutocompleteComponent, ConfirmModalComponent, GlobalErrorAlertComponent, RelatedEntitiesModalComponent,
+    AppCountryAutocompleteComponent
   ],
   templateUrl: './artwork-form.component.html',
 })
@@ -29,32 +36,42 @@ export class ArtworkFormComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private toast = inject(ToastService);
+  private errorHandler = inject(FormErrorHandlerService);
+  private constraintErrorHandler = inject(ConstraintErrorHandlerService);
+  private destroyRef = inject(DestroyRef);
 
   isEdit = false;
   editingId: string | null = null;
 
-  // File upload
+  // Upload de fichier
   fileSignal = signal<File | null>(null);
   previewUrl = signal<string | null>(null);
 
-  // Loading / submitting
+  // Chargement / soumission
   loading = signal(false);
   submitting = signal(false);
+  globalError = signal<string | null>(null);
 
-  // Delete modal
+  // Modal de suppression
   confirmModalOpen = signal(false);
   artworkToDeleteId: number | null = null;
   selectedArtworkTitle = '';
 
-  // Form
+  // Modal des entites liees
+  relatedEntitiesModalOpen = signal(false);
+  relatedEntitiesData: RelatedEntitiesData[] = [];
+  relatedEntitiesTitle = '';
+  relatedEntitiesMessage = '';
+
+  // Formulaire
   form = this.fb.group({
-    title: ['', [Validators.required, Validators.maxLength(255)]],
+    title: ['', [Validators.required, Validators.maxLength(255), Validators.minLength(2)]],
     type: ['', Validators.required],
     style: ['', Validators.required],
     creationDate: ['', Validators.required],
-    description: ['', Validators.maxLength(500)],
+    description: ['', Validators.maxLength(1000)],
     image: [''],
-    location: [''],
+    location: ['', Validators.maxLength(255)],
     artist: [null as SimpleArtist | null, Validators.required],
     isDisplay: [true],
   });
@@ -73,7 +90,7 @@ export class ArtworkFormComponent implements OnInit {
 
   loadArtwork(id: string) {
     this.loading.set(true);
-    this.api.get('artworks', id).subscribe({
+    this.api.get('artworks', id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data: any) => {
         this.form.patchValue({
           title: data.title,
@@ -93,7 +110,12 @@ export class ArtworkFormComponent implements OnInit {
         }
         this.loading.set(false);
       },
-      error: () => this.loading.set(false)
+      error: (e: any) => {
+        console.error('Erreur chargement œuvre:', e);
+        this.loading.set(false);
+        this.handleApiError(e);
+        this.toast.show('Erreur lors du chargement de l\'œuvre', 'error');
+      }
     });
   }
 
@@ -102,15 +124,22 @@ export class ArtworkFormComponent implements OnInit {
   }
 
   submit() {
+    // Reinitialiser l'erreur globale
+    this.globalError.set(null);
+
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.toast.show('Veuillez corriger les erreurs du formulaire', 'error');
       return;
     }
 
     this.submitting.set(true);
     const file = this.fileSignal();
+    const existingImageIri = this.form.value.image ?? null;
 
-    const proceed = (imageIri: string | null) => {
+    const proceed = (uploadedImageIri: string | null) => {
+      const finalImageIri = uploadedImageIri ?? (existingImageIri && existingImageIri.length ? existingImageIri : null);
+
       const payload = {
         title: this.form.value.title,
         type: this.form.value.type,
@@ -120,50 +149,55 @@ export class ArtworkFormComponent implements OnInit {
         location: this.form.value.location,
         artist: this.form.value.artist ? `/api/artists/${this.form.value.artist.id}` : null,
         isDisplay: this.form.value.isDisplay,
-        image: imageIri,
+        image: finalImageIri,
       };
 
       const request$ = this.isEdit && this.editingId
         ? this.api.patch('artworks', this.editingId, payload)
         : this.api.create('artworks', payload);
 
-      request$.subscribe({
+      request$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: () => {
           this.submitting.set(false);
-          this.toast.show("Le formulaire est bon", "success");
+          this.globalError.set(null);
+          this.toast.show('Œuvre enregistrée avec succès', 'success');
           this.router.navigate(['/admin/artworks']);
         },
         error: (err: any) => {
+          console.error('Erreur soumission œuvre:', err);
           this.submitting.set(false);
-          if (err.error && typeof err.error === 'object') {
-            Object.keys(err.error).forEach(key => {
-              if (key in this.form.controls) {
-                (this.form.controls as unknown as ArtworkFormControls)[key as keyof ArtworkFormControls]
-                  .setErrors({ server: err.error[key] });
-              }
-            });
-          } else {
-            this.toast.show("Erreur lors de la soumission", "error");
-          }
+          this.handleApiError(err);
+          this.toast.show('Erreur lors de l\'enregistrement de l\'œuvre', 'error');
         }
       });
     };
 
     if (!file) {
-      proceed(this.form.value.image ?? null);
+      proceed(null);
       return;
     }
 
-    this.uploadMediaObject(file).subscribe({
-      next: (media: any) => proceed(media['@id']),
-      error: () => {
+    this.uploadMediaObject(file).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (media: any) => {
+        const iri = media?.['@id'] ?? null;
+        if (!iri) {
+          this.submitting.set(false);
+          this.globalError.set("L'upload de l'image a réussi mais l'IRI est manquante");
+          this.toast.show("Upload OK mais IRI manquante côté serveur", 'error');
+          return;
+        }
+        proceed(iri);
+      },
+      error: (e: any) => {
+        console.error('Erreur upload image:', e);
         this.submitting.set(false);
-        alert("Erreur lors de l'upload de l'image");
+        this.handleApiError(e);
+        this.toast.show("Erreur lors de l'upload de l'image", 'error');
       }
     });
   }
 
-  // Delete
+  // Suppression
   onDelete() {
     this.artworkToDeleteId = this.editingId ? parseInt(this.editingId, 10) : null;
     this.selectedArtworkTitle = this.form.value.title as string;
@@ -173,12 +207,48 @@ export class ArtworkFormComponent implements OnInit {
   handleConfirmDelete() {
     if (!this.artworkToDeleteId) return;
 
-    this.api.delete('artworks', this.artworkToDeleteId).subscribe({
-      next: () => this.router.navigate(['/admin/artworks']),
-      error: () => alert('Erreur lors de la suppression.')
-    });
+    this.submitting.set(true);
 
-    this.confirmModalOpen.set(false);
+    this.api.delete('artworks', this.artworkToDeleteId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.submitting.set(false);
+        this.confirmModalOpen.set(false);
+        this.globalError.set(null);
+        this.toast.show('Œuvre supprimée avec succès', 'success');
+        this.router.navigate(['/admin/artworks']);
+      },
+      error: (e: any) => {
+        console.error('Erreur suppression œuvre:', e);
+        this.submitting.set(false);
+        this.confirmModalOpen.set(false);
+
+        // Vérifier si c'est une erreur de contrainte
+        const constraintInfo = this.constraintErrorHandler.isConstraintError(e);
+        if (constraintInfo.isConstraintError && this.artworkToDeleteId) {
+          // Charger les entités liées
+          this.constraintErrorHandler.loadArtworkRelatedEntities(this.artworkToDeleteId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (relatedData) => {
+              if (relatedData.length > 0) {
+                this.relatedEntitiesData = relatedData;
+                this.relatedEntitiesTitle = 'Impossible de supprimer l\'œuvre';
+                this.relatedEntitiesMessage = `Cette œuvre ne peut pas être supprimée car elle est liée à d'autres entités. Veuillez d'abord supprimer ou modifier les entités suivantes :`;
+                this.relatedEntitiesModalOpen.set(true);
+              } else {
+                this.handleApiError(e);
+                this.toast.show('Impossible de supprimer l\'œuvre', 'error');
+              }
+            },
+            error: () => {
+              this.handleApiError(e);
+              this.toast.show('Impossible de supprimer l\'œuvre', 'error');
+            }
+          });
+        } else {
+          this.handleApiError(e);
+          this.toast.show('Impossible de supprimer l\'œuvre', 'error');
+        }
+      }
+    });
   }
 
   handleCancelDelete() {
@@ -186,7 +256,20 @@ export class ArtworkFormComponent implements OnInit {
     this.confirmModalOpen.set(false);
   }
 
+  closeRelatedEntitiesModal() {
+    this.relatedEntitiesModalOpen.set(false);
+    this.relatedEntitiesData = [];
+  }
+
   uploadMediaObject(file: File) {
     return this.api.createFormData(file);
+  }
+
+  /**
+   * Gère les erreurs API en utilisant le service FormErrorHandlerService
+   */
+  private handleApiError(error: any): void {
+    const globalError = this.errorHandler.handleApiError(error, this.form);
+    this.globalError.set(globalError);
   }
 }

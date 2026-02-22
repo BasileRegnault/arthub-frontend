@@ -1,41 +1,94 @@
-import { Component, inject, signal, OnInit, AfterViewInit } from '@angular/core';
+import {
+  Component,
+  inject,
+  signal,
+  AfterViewInit,
+  OnDestroy,
+  DestroyRef
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ApiPlatformService } from '../../core/services/api-platform.service';
-import { UserLoginLog, Artwork } from '../../core/models';
 import { Chart, registerables } from 'chart.js';
+import { RouterLink } from '@angular/router';
+import { KpiCardComponent } from '../../shared/components/kpi-card.component/kpi-card.component';
 
 Chart.register(...registerables);
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink, KpiCardComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
-export class AdminDashboardComponent implements AfterViewInit {
+export class AdminDashboardComponent implements AfterViewInit, OnDestroy {
 
   private api = inject(ApiPlatformService<any>);
+  private destroyRef = inject(DestroyRef);
 
   kpis = signal<any>(null);
   charts = signal<any>(null);
+
+  latestConnections: any[] = [];
+  latestArtworks: any[] = [];
+  latestAdminActions: any[] = [];
+
+  // Limites parametrables
+  limits = {
+    connections: 10,
+    artworks: 10,
+    adminActions: 10,
+  };
+
+  // Stock des graphiques pour le nettoyage
+  private chartInstances: Chart[] = [];
 
   ngAfterViewInit() {
     this.loadStats();
   }
 
+  ngOnDestroy() {
+    this.destroyCharts();
+  }
+
+  // ===============================
+  // DONNEES
+  // ===============================
   loadStats() {
-    this.api.getAll('admin/dashboard').subscribe({
+    this.destroyCharts();
+
+    this.api.getAll('admin/dashboard', {
+      limitConnections: this.limits.connections,
+      limitArtworks: this.limits.artworks,
+      limitAdminActions: this.limits.adminActions,
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res: any) => {
         const data = res.items?.[0] ?? res;
+
         this.kpis.set(data.kpis);
         this.charts.set(data.charts);
+
+        this.latestConnections = data.tables.latestConnections ?? [];
+        this.latestArtworks = data.tables.latestArtworks ?? [];
+        this.latestAdminActions = data.tables.latestAdminActions ?? [];
 
         this.initCharts();
       }
     });
   }
 
+  onLimitChange(
+    type: 'connections' | 'artworks' | 'adminActions',
+    value: number
+  ) {
+    this.limits[type] = Number(value);
+    this.loadStats();
+  }
+
+  // ===============================
+  // GRAPHIQUES
+  // ===============================
   initCharts() {
     this.artworksByMonthChart();
     this.connectionsByDayChart();
@@ -44,10 +97,15 @@ export class AdminDashboardComponent implements AfterViewInit {
     this.nationalitiesChart();
   }
 
-  artworksByMonthChart() {
-    const data = this.charts().artworksByMonth;
+  destroyCharts() {
+    this.chartInstances.forEach(c => c.destroy());
+    this.chartInstances = [];
+  }
 
-    new Chart('artworksByMonth', {
+  artworksByMonthChart() {
+    const data = this.charts()?.artworksByMonth ?? [];
+
+    const chart = new Chart('artworksByMonth', {
       type: 'line',
       data: {
         labels: data.map((d: any) => d.month),
@@ -60,12 +118,14 @@ export class AdminDashboardComponent implements AfterViewInit {
         }]
       }
     });
+
+    this.chartInstances.push(chart);
   }
 
   connectionsByDayChart() {
-    const data = this.charts().connectionsByDay;
-    
-    new Chart('connectionsByDay', {
+    const data = this.charts()?.connectionsByDay ?? [];
+
+    const chart = new Chart('connectionsByDay', {
       type: 'line',
       data: {
         labels: data.map((d: any) => d.day),
@@ -76,27 +136,33 @@ export class AdminDashboardComponent implements AfterViewInit {
         }]
       }
     });
+
+    this.chartInstances.push(chart);
   }
 
   artworksDisplayedChart() {
-    const data = this.charts().artworksDisplayed;
+    const data = this.charts()?.artworksDisplayed;
 
-    new Chart('artworksDisplayed', {
+    if (!data) return;
+
+    const chart = new Chart('artworksDisplayed', {
       type: 'doughnut',
       data: {
-        labels: ['Affichées', 'Non affichées'],
+        labels: ['Affichées', 'Masquées'],
         datasets: [{
           data: [data.displayed, data.hidden],
           backgroundColor: ['#3b82f6', '#ef4444']
         }]
       }
     });
+
+    this.chartInstances.push(chart);
   }
 
   stylesChart() {
-    const data = this.charts().styles;
+    const data = this.charts()?.styles ?? [];
 
-    new Chart('stylesChart', {
+    const chart = new Chart('stylesChart', {
       type: 'pie',
       data: {
         labels: data.map((d: any) => d.style),
@@ -105,21 +171,44 @@ export class AdminDashboardComponent implements AfterViewInit {
         }]
       }
     });
+
+    this.chartInstances.push(chart);
   }
 
   nationalitiesChart() {
-    const data = this.charts().nationalities;
+  const data = this.charts()?.nationalities ?? [];
 
-    new Chart('nationalitiesChart', {
-      type: 'bar',
-      data: {
-        labels: data.map((d: any) => d.nationality),
-        datasets: [{
-          label: 'Artistes',
-          data: data.map((d: any) => d.total),
-          backgroundColor: '#6366f1'
-        }]
+  if (!data.length) return;
+
+  const chart = new Chart('nationalitiesChart', {
+    type: 'bar',
+    data: {
+      labels: data.map((d: any) => d.nationality),
+      datasets: [{
+        label: 'Artistes',
+        data: data.map((d: any) => d.total),
+        backgroundColor: '#6366f1'
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            precision: 0
+          }
+        }
       }
-    });
-  }
+    }
+  });
+
+  this.chartInstances.push(chart);
+}
 }

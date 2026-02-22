@@ -7,6 +7,12 @@
     {{ isEdit ? 'Modifier un artiste' : 'Créer un artiste' }}
   </h2>
 
+  <!-- Global Error Alert -->
+  <app-global-error-alert
+    [error]="globalError()"
+    (dismiss)="globalError.set(null)">
+  </app-global-error-alert>
+
   <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-6">
 
     <!-- Prénom + Nom -->
@@ -25,11 +31,11 @@
     </div>
 
     <!-- Nationalité -->
-    <app-form-field
+    <app-country-autocomplete
       label="Nationalité"
-      [control]="form.controls.nationality"
-      placeholder="Nationalité">
-    </app-form-field>
+      placeholder="Rechercher un pays..."
+      formControlName="nationality">
+    </app-country-autocomplete>
 
     <!-- Dates -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -85,9 +91,11 @@
         }
       </div>
 
-      <div *ngIf="submitting()" class="text-gray-500">
-        Envoi en cours…
-      </div>
+      @if (submitting()) {
+        <div class="text-gray-500">
+          Envoi en cours…
+        </div>
+      }
     </div>
 
   </form>
@@ -101,3 +109,12 @@
   (onConfirm)="handleConfirmDelete()"
   (onCancel)="handleCancelDelete()">
 </app-confirm-modal>
+
+<!-- Modal entités liées -->
+<app-related-entities-modal
+  [isOpen]="relatedEntitiesModalOpen"
+  [title]="relatedEntitiesTitle"
+  [message]="relatedEntitiesMessage"
+  [relatedData]="relatedEntitiesData"
+  (onClose)="closeRelatedEntitiesModal()">
+</app-related-entities-modal>

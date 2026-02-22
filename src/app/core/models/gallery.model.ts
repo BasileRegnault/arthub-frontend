@@ -1,5 +1,6 @@
 import { User } from './user.model';
 import { Artwork } from './artwork.model';
+import { MediaObject } from './mediaObject.model';
 
 export interface Gallery {
   '@id'?: string;
@@ -8,12 +9,13 @@ export interface Gallery {
   name: string;
   description?: string | null;
 
-  coverImage?: string | null;
+  coverImage?: MediaObject;
   views?: number | null;
 
   isPublic: boolean;
 
-  owner: User | string; // IRI or expanded User
+  createdBy?: User | string;
+  updatedBy?: User | string;
 
   artworks?: Artwork[] | string[];
 

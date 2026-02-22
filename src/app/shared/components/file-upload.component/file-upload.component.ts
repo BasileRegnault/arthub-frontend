@@ -37,7 +37,7 @@ export class FileUploadComponent implements OnInit, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    // 🔥 Si la preview backend arrive après un appel API :
+    // Si la preview backend arrive apres un appel API :
     if (changes['initialPreview'] && this.initialPreview && !this.file) {
       this.preview.set(this.initialPreview);
     }

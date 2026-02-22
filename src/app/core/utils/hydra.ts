@@ -14,11 +14,9 @@ export function mapHydraCollection<T>(
   itemsPerPage: number
 ): PaginatedResult<T> {
 
-  const items = response.member ?? [];
-  const total = response.totalItems ?? items.length;
+  const items = response['hydra:member'] ?? response.member ?? [];
+  const total = response['hydra:totalItems'] ?? response.totalItems ?? items.length;
   const lastPage = Math.max(1, Math.ceil(total / itemsPerPage));
-
-  console.log(items);
 
   return {
     items,

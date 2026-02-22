@@ -1,5 +1,6 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
 import { catchError, switchMap, throwError, EMPTY } from 'rxjs';
 
@@ -7,8 +8,9 @@ let isRefreshing = false;
 
 export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
+  const router = inject(Router);
 
-  // ⛔️ Ne jamais intercepter ces routes
+  // Ne jamais intercepter ces routes
   if (
     req.url.includes('/login') ||
     req.url.includes('/register') ||
@@ -17,28 +19,25 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
     return next(req);
   }
 
-  const token = auth.token;
-  console.log(token, 'token');
-  
-
-  if (token) {
-    req = req.clone({
-      setHeaders: { Authorization: `Bearer ${token}` }
-    });
+  // N'envoyer le token que s'il est valide (non expiré)
+  if (auth.isAuthenticated()) {
+    const token = auth.token;
+    if (token) {
+      req = req.clone({
+        setHeaders: { Authorization: `Bearer ${token}` }
+      });
+    }
   }
-
-  console.log(req);
-  
 
   return next(req).pipe(
     catchError(err => {
 
-      // ❌ Mauvais identifiants → PAS DE REFRESH
+      // Mauvais identifiants : pas de refresh
       if (err.status === 401 && err.error?.message === 'Invalid credentials.') {
         return throwError(() => err);
       }
 
-      // 🔄 Token expiré → refresh UNE SEULE FOIS
+      // Token expiré : refresh une seule fois
       if (err.status === 401 && !isRefreshing) {
         isRefreshing = true;
 
@@ -59,8 +58,9 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
           catchError(() => {
             isRefreshing = false;
 
-            //auth.logout();
-            //window.location.href = '/auth/login?reason=expired';
+            // Refresh échoué : déconnecter et rediriger
+            auth.logout();
+            router.navigate(['/auth/login'], { queryParams: { reason: 'expired' } });
 
             return EMPTY;
           })

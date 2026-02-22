@@ -36,14 +36,30 @@ export class ApiPlatformService<T> {
     );
   }
 
-  getAll(endpoint: string): Observable<T> {
-    console.log(`${this.baseUrl}/${endpoint}`);
-    
-    return this.http.get<T>(`${this.baseUrl}/${endpoint}`);
+    getAll(
+      endpoint: string,
+      params?: Record<string, string | number | boolean>
+      ): Observable<T> {
+
+    let httpParams = new HttpParams();
+
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          httpParams = httpParams.set(key, value);
+        }
+      });
+    }
+
+    return this.http.get<T>(
+      `${this.baseUrl}/${endpoint}`,
+      { params: httpParams }
+    );
   }
 
-  get(endpoint: string, id: string | number): Observable<T> {
-    return this.http.get<T>(`${this.baseUrl}/${endpoint}/${id}`);
+
+  get(endpoint: string, id: string | number, params?: Record<string, any>): Observable<T> {
+    return this.http.get<T>(`${this.baseUrl}/${endpoint}/${id}`, { params });
   }
 
   create(endpoint: string, data: Partial<T>): Observable<T> {
@@ -60,6 +76,10 @@ export class ApiPlatformService<T> {
 
   delete(endpoint: string, id: string | number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${endpoint}/${id}`);
+  }
+
+  post(endpoint: string, id: string | number, data: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/${endpoint}/${id}`, data);
   }
 
   createFormData(file: File) {

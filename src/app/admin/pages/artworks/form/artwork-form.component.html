@@ -6,6 +6,12 @@
     {{ isEdit ? 'Modifier une œuvre' : 'Créer une nouvelle œuvre' }}
   </h2>
 
+  <!-- Global Error Alert -->
+  <app-global-error-alert
+    [error]="globalError()"
+    (dismiss)="globalError.set(null)">
+  </app-global-error-alert>
+
   <form (ngSubmit)="submit()" [formGroup]="form" class="space-y-6">
 
     <!-- Title -->
@@ -32,7 +38,11 @@
     </div>
 
     <!-- Localisation -->
-    <app-form-field label="Localisation" [control]="form.controls.location" placeholder="Entrez la localisation de l'œuvre"></app-form-field>
+    <app-country-autocomplete
+      label="Localisation"
+      placeholder="Rechercher un pays..."
+      formControlName="location">
+    </app-country-autocomplete>
 
     <!-- Afficher (isDisplay) -->
     <app-form-field label="Afficher cette œuvre" type="toggle" [control]="form.controls.isDisplay"></app-form-field>
@@ -54,7 +64,9 @@
         }
       </div>
 
-      <div *ngIf="submitting()" class="text-gray-500">Envoi en cours...</div>
+      @if (submitting()) {
+        <div class="text-gray-500">Envoi en cours...</div>
+      }
     </div>
 
   </form>
@@ -67,3 +79,12 @@
   (onConfirm)="handleConfirmDelete()"
   (onCancel)="handleCancelDelete()">
 </app-confirm-modal>
+
+<!-- Modal entités liées -->
+<app-related-entities-modal
+  [isOpen]="relatedEntitiesModalOpen"
+  [title]="relatedEntitiesTitle"
+  [message]="relatedEntitiesMessage"
+  [relatedData]="relatedEntitiesData"
+  (onClose)="closeRelatedEntitiesModal()">
+</app-related-entities-modal>

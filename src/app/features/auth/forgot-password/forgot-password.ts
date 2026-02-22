@@ -23,11 +23,13 @@ export class ForgotPasswordComponent {
 
     success = false;
     loading = false;
+    error?: string;
 
     submit() {
       if (this.form.invalid) return;
 
       this.loading = true;
+      this.error = undefined;
 
       this.http.post(`${environment.apiUrl}/forgot-password`, this.form.value)
         .subscribe({
@@ -35,7 +37,10 @@ export class ForgotPasswordComponent {
             this.loading = false;
             this.success = true;
           },
-          error: () => this.loading = false
+          error: () => {
+            this.loading = false;
+            this.error = 'Une erreur est survenue, veuillez réessayer.';
+          }
         });
     }
 }

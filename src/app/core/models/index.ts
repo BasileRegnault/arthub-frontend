@@ -8,3 +8,5 @@ export * from './user.model';
 export * from './hydra.model';
 export * from './mediaObject.model';
 export * from './userLoginLog.model';
+export * from './activityLog.model';
+export * from './stats.model';
